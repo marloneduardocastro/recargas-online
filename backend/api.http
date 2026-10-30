@@ -1,0 +1,36 @@
+### Catálogos
+GET http://localhost:8080/api/operadores
+
+###
+GET http://localhost:8080/api/vendedores
+
+### Vender una recarga
+POST http://localhost:8080/api/recargas
+Content-Type: application/json
+
+{
+  "operadorId": 1,
+  "vendedorId": 1,
+  "numeroCelular": "3001234567",
+  "valor": 10000
+}
+
+### Últimas recargas
+GET http://localhost:8080/api/recargas?limite=20
+
+### Resumen total por operador y por vendedor
+GET http://localhost:8080/api/recargas/resumen
+
+### Resumen en un rango de fechas
+GET http://localhost:8080/api/recargas/resumen?desde=2026-10-01&hasta=2026-10-31
+
+### Error de validación (400)
+POST http://localhost:8080/api/recargas
+Content-Type: application/json
+
+{
+  "operadorId": 1,
+  "vendedorId": 1,
+  "numeroCelular": "12345",
+  "valor": 500
+}

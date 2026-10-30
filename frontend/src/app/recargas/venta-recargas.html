@@ -1,0 +1,208 @@
+<header class="encabezado">
+  <h1>Venta de recargas en línea</h1>
+  <p>Tigo · Movistar · Comcel · Uff</p>
+</header>
+
+<main class="contenido">
+  <!-- ===================== Venta ===================== -->
+  <section class="tarjeta">
+    <h2>Nueva recarga</h2>
+
+    <form [formGroup]="form" (ngSubmit)="vender()" novalidate>
+      <label>
+        Vendedor
+        <select formControlName="vendedorId" data-testid="vendedor">
+          <option [ngValue]="null" disabled>Seleccione…</option>
+          @for (vendedor of vendedores(); track vendedor.id) {
+            <option [ngValue]="vendedor.id">{{ vendedor.nombre }} ({{ vendedor.numeroDocumento }})</option>
+          }
+        </select>
+        @if (error('vendedorId'); as mensaje) {
+          <small class="error-campo">{{ mensaje }}</small>
+        }
+      </label>
+
+      <fieldset>
+        <legend>Operador</legend>
+        <div class="operadores">
+          @for (operador of operadores(); track operador.id) {
+            <label class="opcion-operador" [class.activa]="form.controls.operadorId.value === operador.id">
+              <input type="radio" formControlName="operadorId" [value]="operador.id" />
+              {{ operador.nombre }}
+            </label>
+          }
+        </div>
+        @if (error('operadorId'); as mensaje) {
+          <small class="error-campo">{{ mensaje }}</small>
+        }
+      </fieldset>
+
+      <label>
+        Número celular
+        <input type="tel" formControlName="numeroCelular" maxlength="10" placeholder="3001234567"
+               inputmode="numeric" data-testid="celular" />
+        @if (error('numeroCelular'); as mensaje) {
+          <small class="error-campo">{{ mensaje }}</small>
+        }
+      </label>
+
+      <label>
+        Valor
+        <input type="number" formControlName="valor" min="1000" max="500000" step="1000"
+               placeholder="10000" data-testid="valor" />
+        @if (error('valor'); as mensaje) {
+          <small class="error-campo">{{ mensaje }}</small>
+        }
+      </label>
+      <div class="valores-sugeridos">
+        @for (valor of valoresSugeridos; track valor) {
+          <button type="button" class="chip" (click)="seleccionarValor(valor)">
+            {{ valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+          </button>
+        }
+      </div>
+
+      <button type="submit" class="primario" [disabled]="enviando()" data-testid="vender">
+        {{ enviando() ? 'Registrando…' : 'Vender recarga' }}
+      </button>
+    </form>
+
+    @if (mensaje(); as m) {
+      <p class="mensaje" [class.exito]="m.tipo === 'exito'" [class.error]="m.tipo === 'error'" role="status">
+        {{ m.texto }}
+      </p>
+    }
+  </section>
+
+  <!-- ===================== Resumen ===================== -->
+  <section class="tarjeta">
+    <h2>Resumen de ventas</h2>
+
+    <form class="filtros" [formGroup]="filtros" (ngSubmit)="cargarResumen()">
+      <label>Desde <input type="date" formControlName="desde" /></label>
+      <label>Hasta <input type="date" formControlName="hasta" /></label>
+      <button type="submit">Consultar</button>
+      <button type="button" (click)="limpiarFiltros()">Todo</button>
+    </form>
+
+    @if (resumen(); as r) {
+      <p class="total-general" data-testid="total-general">
+        <strong>{{ r.cantidadTotal }}</strong> recargas por
+        <strong>{{ r.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+      </p>
+
+      <div class="tablas">
+        <table data-testid="tabla-operador">
+          <caption>Por operador</caption>
+          <thead>
+            <tr><th>Operador</th><th class="num">Cantidad</th><th class="num">Valor total</th></tr>
+          </thead>
+          <tbody>
+            @for (t of r.porOperador; track t.id) {
+              <tr>
+                <td>{{ t.nombre }}</td>
+                <td class="num">{{ t.cantidad }}</td>
+                <td class="num">{{ t.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <table data-testid="tabla-vendedor">
+          <caption>Por vendedor</caption>
+          <thead>
+            <tr><th>Vendedor</th><th class="num">Cantidad</th><th class="num">Valor total</th></tr>
+          </thead>
+          <tbody>
+            @for (t of r.porVendedor; track t.id) {
+              <tr>
+                <td>{{ t.nombre }}</td>
+                <td class="num">{{ t.cantidad }}</td>
+                <td class="num">{{ t.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (matriz(); as m) {
+        <div class="desplazable">
+          <table class="matriz" data-testid="tabla-cruzada">
+            <caption>Vendedor × operador (cantidad / valor)</caption>
+            <thead>
+              <tr>
+                <th>Vendedor</th>
+                @for (operador of m.operadores; track operador) {
+                  <th class="num">{{ operador }}</th>
+                }
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of m.filas; track fila.vendedor) {
+                <tr>
+                  <td>{{ fila.vendedor }}</td>
+                  @for (celda of fila.celdas; track $index) {
+                    <td class="num">
+                      {{ celda.cantidad }}<br />
+                      <small>{{ celda.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</small>
+                    </td>
+                  }
+                  <td class="num total">
+                    {{ fila.cantidad }}<br />
+                    <small>{{ fila.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</small>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td>
+                @for (t of m.totalesOperador; track t.id) {
+                  <td class="num">
+                    {{ t.cantidad }}<br />
+                    <small>{{ t.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</small>
+                  </td>
+                }
+                <td class="num total">
+                  {{ r.cantidadTotal }}<br />
+                  <small>{{ r.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</small>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    } @else {
+      <p>Cargando resumen…</p>
+    }
+  </section>
+
+  <!-- ===================== Últimas ventas ===================== -->
+  <section class="tarjeta">
+    <h2>Últimas recargas</h2>
+    <div class="desplazable">
+      <table data-testid="tabla-ultimas">
+        <thead>
+          <tr>
+            <th>#</th><th>Fecha</th><th>Vendedor</th><th>Operador</th><th>Celular</th><th class="num">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (recarga of ultimas(); track recarga.id) {
+            <tr>
+              <td>{{ recarga.id }}</td>
+              <td>{{ recarga.fechaVenta | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ recarga.vendedor }}</td>
+              <td>{{ recarga.operador }}</td>
+              <td>{{ recarga.numeroCelular }}</td>
+              <td class="num">{{ recarga.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6">Aún no hay recargas registradas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>

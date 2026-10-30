@@ -1,0 +1,42 @@
+@startuml modelo-relacional
+!theme plain
+skinparam dpi 160
+skinparam linetype ortho
+skinparam defaultFontName Arial
+hide circle
+title Modelo relacional - Venta de recargas
+
+entity "operador" as operador {
+  * id : BIGINT <<PK>>
+  --
+  * nombre : VARCHAR(50) <<UK>>
+  * activo : BOOLEAN
+}
+
+entity "vendedor" as vendedor {
+  * id : BIGINT <<PK>>
+  --
+  * numero_documento : VARCHAR(20) <<UK>>
+  * nombre : VARCHAR(100)
+  * activo : BOOLEAN
+}
+
+entity "recarga" as recarga {
+  * id : BIGINT <<PK>>
+  --
+  * operador_id : BIGINT <<FK>>
+  * vendedor_id : BIGINT <<FK>>
+  * numero_celular : VARCHAR(10)
+  * valor : NUMERIC(12,2)
+  * fecha_venta : TIMESTAMP
+}
+
+operador ||--o{ recarga : "se vende en"
+vendedor ||--o{ recarga : "vende"
+
+note bottom of recarga
+  Índices: operador_id, vendedor_id, fecha_venta
+  CHECK numero_celular ~ '^3[0-9]{9}$'
+  CHECK valor BETWEEN 1000 AND 500000
+end note
+@enduml

@@ -1,0 +1,67 @@
+@startuml secuencia-vender-recarga
+!theme plain
+skinparam dpi 160
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+autonumber
+hide footbox
+title Secuencia - Vender recarga
+
+actor Vendedor
+participant "VentaRecargas\n(Angular)" as ui
+participant "RecargasApi\n(Angular)" as api
+participant "RecargaController" as ctrl
+participant "RecargaService" as svc
+participant "OperadorRepository" as orep
+participant "VendedorRepository" as vrep
+participant "RecargaRepository" as rrep
+database "BD" as bd
+
+Vendedor -> ui : Selecciona vendedor y operador,\ndigita celular y valor, "Vender"
+ui -> ui : Validación del formulario
+alt formulario inválido
+  ui --> Vendedor : Muestra errores por campo
+else formulario válido
+  ui -> api : vender(venta)
+  api -> ctrl : POST /api/recargas (JSON)
+  ctrl -> ctrl : @Valid RecargaRequest
+  alt datos inválidos
+    ctrl --> api : 400 ProblemDetail {errores}
+    api --> ui : error
+    ui --> Vendedor : Muestra errores
+  else datos válidos
+    ctrl -> svc : vender(request)
+    activate svc
+    svc -> orep : findById(operadorId)
+    orep -> bd : SELECT operador
+    orep --> svc : Operador
+    svc -> vrep : findById(vendedorId)
+    vrep -> bd : SELECT vendedor
+    vrep --> svc : Vendedor
+    alt no existe / inactivo
+      svc --> ctrl : RecursoNoEncontrado / ReglaNegocio
+      ctrl --> api : 404 / 422 ProblemDetail
+      api --> ui : error
+      ui --> Vendedor : Muestra mensaje
+    else ok
+      svc -> rrep : save(new Recarga(...))
+      rrep -> bd : INSERT recarga
+      rrep --> svc : Recarga
+      svc --> ctrl : RecargaResponse
+      deactivate svc
+      ctrl --> api : 201 Created + RecargaResponse
+      api --> ui : Recarga
+      ui --> Vendedor : "Recarga #N registrada"
+      ui -> api : resumen() y ultimas()
+      api -> ctrl : GET /api/recargas/resumen\nGET /api/recargas
+      ctrl -> svc : resumen(desde, hasta)
+      svc -> rrep : totalizarPorOperador / PorVendedor /\nPorOperadorYVendedor
+      rrep -> bd : SELECT ... GROUP BY
+      svc --> ctrl : ResumenRecargasResponse
+      ctrl --> api : 200 OK
+      api --> ui : resumen actualizado
+      ui --> Vendedor : Tablas por operador y vendedor
+    end
+  end
+end
+@enduml

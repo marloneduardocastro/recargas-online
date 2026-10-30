@@ -1,0 +1,120 @@
+@startuml clases
+!theme plain
+skinparam dpi 160
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam nodesep 25
+skinparam ranksep 45
+title Diagrama de clases - Backend Spring Boot
+
+package "web" {
+  class RecargaController <<RestController>> {
+    + vender(RecargaRequest) : RecargaResponse
+    + ultimas(limite) : List<RecargaResponse>
+    + resumen(desde, hasta) : ResumenRecargasResponse
+  }
+  class CatalogoController <<RestController>> {
+    + operadores() : List<OperadorDto>
+    + vendedores() : List<VendedorDto>
+  }
+  class GlobalExceptionHandler <<RestControllerAdvice>> {
+    + datosInvalidos() : ProblemDetail
+    + noEncontrado() : ProblemDetail
+    + reglaNegocio() : ProblemDetail
+  }
+}
+
+package "service" {
+  class RecargaService <<Service>> {
+    + vender(RecargaRequest) : RecargaResponse
+    + ultimas(limite) : List<RecargaResponse>
+    + resumen(desde, hasta) : ResumenRecargasResponse
+  }
+  class CatalogoService <<Service>> {
+    + operadoresActivos() : List<OperadorDto>
+    + vendedoresActivos() : List<VendedorDto>
+  }
+}
+
+package "repository" {
+  interface RecargaRepository <<JpaRepository>> {
+    + buscarUltimas(Pageable)
+    + totalizarPorOperador(desde, hasta)
+    + totalizarPorVendedor(desde, hasta)
+    + totalizarPorOperadorYVendedor(desde, hasta)
+  }
+  interface OperadorRepository <<JpaRepository>> {
+    + findByActivoTrueOrderByNombreAsc()
+  }
+  interface VendedorRepository <<JpaRepository>> {
+    + findByActivoTrueOrderByNombreAsc()
+  }
+}
+
+package "domain" {
+  class Recarga <<Entity>> {
+    - id : Long
+    - numeroCelular : String
+    - valor : BigDecimal
+    - fechaVenta : LocalDateTime
+  }
+  class Operador <<Entity>> {
+    - id : Long
+    - nombre : String
+    - activo : boolean
+  }
+  class Vendedor <<Entity>> {
+    - id : Long
+    - numeroDocumento : String
+    - nombre : String
+    - activo : boolean
+  }
+}
+
+package "dto" {
+  class RecargaRequest <<record>> {
+    operadorId : Long
+    vendedorId : Long
+    numeroCelular : String
+    valor : BigDecimal
+  }
+  class RecargaResponse <<record>> {
+    id, operador, vendedor,
+    numeroCelular, valor, fechaVenta
+  }
+  class ResumenRecargasResponse <<record>> {
+    cantidadTotal : long
+    valorTotal : BigDecimal
+  }
+  class TotalRecargas <<record>> {
+    id : Long
+    nombre : String
+    cantidad : Long
+    valorTotal : BigDecimal
+  }
+  class TotalOperadorVendedor <<record>> {
+    operador : String
+    vendedor : String
+    cantidad : Long
+    valorTotal : BigDecimal
+  }
+}
+
+RecargaController --> RecargaService
+CatalogoController --> CatalogoService
+RecargaService --> RecargaRepository
+RecargaService --> OperadorRepository
+RecargaService --> VendedorRepository
+CatalogoService ..> OperadorRepository
+CatalogoService ..> VendedorRepository
+
+RecargaRepository ..> Recarga : gestiona
+Recarga "*" --> "1" Operador : operador
+Recarga "*" --> "1" Vendedor : vendedor
+
+ResumenRecargasResponse "1" *-- "*" TotalRecargas : porOperador\nporVendedor
+ResumenRecargasResponse "1" *-- "*" TotalOperadorVendedor : porOperadorYVendedor
+
+Operador -[hidden]down-> RecargaRequest
+Vendedor -[hidden]down-> RecargaResponse
+@enduml

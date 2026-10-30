@@ -1,0 +1,37 @@
+@startuml casos-de-uso
+!theme plain
+skinparam dpi 160
+skinparam defaultFontName Arial
+left to right direction
+title Casos de uso - Venta de recargas
+
+actor "Vendedor" as vendedor
+actor "Supervisor" as supervisor
+actor "Plataforma del\noperador" as plataforma <<sistema>>
+
+rectangle "Sistema de recargas en línea" {
+  usecase "UC1 Vender recarga" as UC1
+  usecase "Validar número\ny valor" as UC1a
+  usecase "Registrar venta" as UC1b
+  usecase "UC2 Consultar últimas recargas" as UC2
+  usecase "UC3 Consultar resumen\npor operador" as UC3
+  usecase "UC4 Consultar resumen\npor vendedor" as UC4
+  usecase "UC5 Consultar resumen\noperador x vendedor" as UC5
+  usecase "Filtrar por rango\nde fechas" as UC6
+}
+
+vendedor --> UC1
+vendedor --> UC2
+vendedor --> UC3
+supervisor --> UC3
+supervisor --> UC4
+supervisor --> UC5
+supervisor --> UC2
+
+UC1 ..> UC1a : <<include>>
+UC1 ..> UC1b : <<include>>
+UC6 ..> UC3 : <<extend>>
+UC6 ..> UC4 : <<extend>>
+UC6 ..> UC5 : <<extend>>
+UC1 --> plataforma : (integración futura)
+@enduml

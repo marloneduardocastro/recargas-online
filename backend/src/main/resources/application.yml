@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: recargas-online
+  # Perfil por defecto: base de datos H2 en memoria (no requiere instalar nada)
+  datasource:
+    url: jdbc:h2:mem:recargas;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    defer-datasource-initialization: true   # data.sql se ejecuta después de crear las tablas
+  sql:
+    init:
+      encoding: UTF-8                       # tildes correctas en data.sql también en Windows
+  h2:
+    console:
+      enabled: true                         # http://localhost:8080/h2-console
+
+app:
+  cors:
+    allowed-origins: http://localhost:4200
+
+---
+# Perfil para PostgreSQL: ejecutar antes db/postgres/schema.sql
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/recargas}
+    username: ${DB_USER:recargas}
+    password: ${DB_PASSWORD:recargas}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  sql:
+    init:
+      mode: never
+  h2:
+    console:
+      enabled: false
